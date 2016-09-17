@@ -36,7 +36,10 @@ struct UrlMap {
 
 impl UrlMap {
     fn new(path: &str) -> UrlMap {
-        let mut urlmap = UrlMap{path: path.to_owned(), urls: BidirMap::new()};
+        let mut urlmap = UrlMap {
+            path: path.to_owned(),
+            urls: BidirMap::new(),
+        };
         urlmap.load_urls();
         urlmap
     }
@@ -59,7 +62,9 @@ impl UrlMap {
     }
 
     fn save_urls(&self) {
-        let json = Value::Object(Map::from_iter(self.urls.iter().map(|&(ref k, ref v)| (k.clone(), Value::String(v.clone())))));
+        let json = Value::Object(Map::from_iter(self.urls
+            .iter()
+            .map(|&(ref k, ref v)| (k.clone(), Value::String(v.clone())))));
         let mut urlsfile = File::create(&self.path).unwrap();
         serde_json::to_writer(&mut urlsfile, &json).unwrap();
     }
@@ -96,13 +101,15 @@ fn main() {
         if uri == "/create" {
             let hash = urlmap.add_url(&query);
             write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", &hash).unwrap();
-        }
-        else {
+        } else {
             if let Some(url) = urlmap.get_url(uri.split_at(1).1) {
-            write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", &url).unwrap();
+                write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", &url).unwrap();
             } else {
-                write!(&mut req.stdout(), "Status: 404\nContent-Type: text/plain\n\n404: Page Not Found").unwrap();
+                write!(&mut req.stdout(),
+                       "Status: 404\nContent-Type: text/plain\n\n404: Page Not Found")
+                    .unwrap();
             }
         }
-    }, &listener);
+    },
+                     &listener);
 }
