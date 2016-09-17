@@ -2,10 +2,11 @@ extern crate fastcgi;
 extern crate serde_json;
 extern crate rand;
 extern crate bidir_map;
+extern crate toml;
 
 use std::iter::FromIterator;
 use std::net::TcpListener;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::fs::File;
 use rand::Rng;
 
@@ -89,10 +90,20 @@ impl UrlMap {
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:9261").unwrap();
     let mut urlspath = std::env::home_dir().unwrap();
     urlspath.push(".config/turls/urls.json");
+    let mut configpath = std::env::home_dir().unwrap();
+    configpath.push(".config/turls/config.toml");
+
     let mut urlmap = UrlMap::new(urlspath.to_str().unwrap());
+
+    let mut configfile = File::open(&configpath).unwrap();
+    let mut toml = String::new();
+    configfile.read_to_string(&mut toml).unwrap();
+    let config = toml::Parser::new(&toml).parse().unwrap();
+    let address: String = config.get("address").unwrap().as_str().unwrap().to_owned();
+
+    let listener = TcpListener::bind(&address as &str).unwrap();
 
     fastcgi::run_tcp(|mut req| {
         let query = req.param("QUERY_STRING").unwrap();
