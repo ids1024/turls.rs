@@ -23,11 +23,11 @@ fn to_base58(mut number: u32) -> String {
     String::from_iter(digits.iter().rev().map(|x| B58_ALPHABET.chars().nth(*x).unwrap()))
 }
 
-fn from_base58(string: &str) -> u32 {
-    string.chars().rev().enumerate().fold(0, |n, (x, i)| {
-        n + ((58 as u32).pow(x as u32) * (B58_ALPHABET.find(i).unwrap() as u32))
-    })
-}
+// fn from_base58(string: &str) -> u32 {
+//    string.chars().rev().enumerate().fold(0, |n, (x, i)| {
+//        n + ((58 as u32).pow(x as u32) * (B58_ALPHABET.find(i).unwrap() as u32))
+//    })
+// }
 
 struct UrlMap {
     path: String,
