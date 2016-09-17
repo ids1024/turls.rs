@@ -91,7 +91,7 @@ impl UrlMap {
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:9261").unwrap();
     let mut urlspath = std::env::home_dir().unwrap();
-    urlspath.push(".local/share/turls/urls.json");
+    urlspath.push(".config/turls/urls.json");
     let mut urlmap = UrlMap::new(urlspath.to_str().unwrap());
 
     fastcgi::run_tcp(|mut req| {
@@ -102,7 +102,7 @@ fn main() {
             let hash = urlmap.add_url(&query);
             write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", &hash).unwrap();
         } else {
-            if let Some(url) = urlmap.get_url(uri.split_at(1).1) {
+            if let Some(url) = urlmap.get_url(uri.trim_matches('/')) {
                 write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", &url).unwrap();
             } else {
                 write!(&mut req.stdout(),
