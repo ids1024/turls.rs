@@ -1,0 +1,12 @@
+[package]
+name = "turls"
+version = "0.0.1"
+authors = ["Ian D. Scott <ian@iandouglasscott.com>"]
+description = "Trivial url shortener"
+license = "MIT"
+
+[dependencies]
+fastcgi = "1.0.0-beta"
+serde_json = "0.8"
+rand = "0.3"
+bidir-map = "0.3"
