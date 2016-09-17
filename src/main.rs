@@ -4,6 +4,8 @@ extern crate rand;
 extern crate bidir_map;
 
 use std::iter::FromIterator;
+use std::net::TcpListener;
+use std::io::Write;
 use std::fs::File;
 use rand::Rng;
 
@@ -82,15 +84,25 @@ impl UrlMap {
 }
 
 fn main() {
-    // let mut input = String::new();
-    // std::io::stdin().read_line(&mut input).unwrap();
-    // input.pop();
-    // let string = to_base58(input.parse::<u32>().unwrap());
-    // println!("{}", string)
-    // println!("{}", from_base58(&input))
+    let listener = TcpListener::bind("127.0.0.1:9261").unwrap();
+    let mut urlspath = std::env::home_dir().unwrap();
+    urlspath.push(".local/share/turls/urls.json");
+    let mut urlmap = UrlMap::new(urlspath.to_str().unwrap());
 
-    let mut urlmap = UrlMap::new("urls.json");
-
-    
-    //println!("{} : {}", number, to_base58(number))
+    fastcgi::run_tcp(|mut req| {
+        let query = req.param("QUERY_STRING").unwrap();
+        let uri = req.param("DOCUMENT_URI").unwrap();
+        println!("{} | {}", &uri, &query);
+        if uri == "/create" {
+            let hash = urlmap.add_url(&query);
+            write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", &hash).unwrap();
+        }
+        else {
+            if let Some(url) = urlmap.get_url(uri.split_at(1).1) {
+            write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", &url).unwrap();
+            } else {
+                write!(&mut req.stdout(), "Status: 404\nContent-Type: text/plain\n\n404: Page Not Found").unwrap();
+            }
+        }
+    }, &listener);
 }
