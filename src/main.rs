@@ -70,22 +70,21 @@ impl UrlMap {
         serde_json::to_writer(&mut urlsfile, &json).unwrap();
     }
 
-    fn add_url(&mut self, url: &str) -> String {
-        if let Some(hash) = self.urls.get_by_second(url) {
-            return hash.to_owned();
+    fn add_url(&mut self, url: &str) -> &str {
+        if !self.urls.contains_second_key(url) {
+            let mut hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
+            while self.urls.contains_second_key(url) {
+                // Handle randomly occuring duplicate
+                hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
+            }
+            self.urls.insert(hash, url.to_owned());
+            self.save_urls();
         }
-        let mut hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
-        while self.urls.contains_second_key(url) {
-            // Handle randomly occuring duplicate
-            hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
-        }
-        self.urls.insert(hash.clone(), url.to_owned());
-        self.save_urls();
-        hash
+        self.urls.get_by_second(url).unwrap()
     }
 
-    fn get_url(&self, hash: &str) -> Option<String> {
-        self.urls.get_by_first(hash).map(|x| x.to_owned())
+    fn get_url(&self, hash: &str) -> Option<&str> {
+        self.urls.get_by_first(hash).map(|x| x as &str)
     }
 }
 
@@ -110,10 +109,10 @@ fn main() {
         let uri = req.param("DOCUMENT_URI").unwrap();
         if uri == "/create" {
             let hash = urlmap.add_url(&query);
-            write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", &hash).unwrap();
+            write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", hash).unwrap();
         } else {
             if let Some(url) = urlmap.get_url(uri.trim_matches('/')) {
-                write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", &url).unwrap();
+                write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", url).unwrap();
             } else {
                 write!(&mut req.stdout(),
                        "Status: 404\nContent-Type: text/plain\n\n404: Page Not Found")
