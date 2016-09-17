@@ -72,6 +72,7 @@ impl UrlMap {
 
     fn add_url(&mut self, url: &str) -> &str {
         if !self.urls.contains_second_key(url) {
+            loop {
             let mut hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
             while self.urls.contains_second_key(url) {
                 // Handle randomly occuring duplicate
@@ -101,6 +102,7 @@ fn main() {
     configfile.read_to_string(&mut toml).unwrap();
     let config = toml::Parser::new(&toml).parse().unwrap();
     let address: String = config.get("address").unwrap().as_str().unwrap().to_owned();
+    let baseurl: String = config.get("baseurl").unwrap().as_str().unwrap().to_owned();
 
     let listener = TcpListener::bind(&address as &str).unwrap();
 
@@ -109,7 +111,11 @@ fn main() {
         let uri = req.param("DOCUMENT_URI").unwrap();
         if uri == "/create" {
             let hash = urlmap.add_url(&query);
-            write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", hash).unwrap();
+            write!(&mut req.stdout(),
+                   "Content-Type: text/plain\n\n{}{}",
+                   &baseurl,
+                   hash)
+                .unwrap();
         } else {
             if let Some(url) = urlmap.get_url(uri.trim_matches('/')) {
                 write!(&mut req.stdout(), "Status: 301\nLocation: {}\n\n", url).unwrap();
