@@ -97,7 +97,6 @@ fn main() {
     fastcgi::run_tcp(|mut req| {
         let query = req.param("QUERY_STRING").unwrap();
         let uri = req.param("DOCUMENT_URI").unwrap();
-        println!("{} | {}", &uri, &query);
         if uri == "/create" {
             let hash = urlmap.add_url(&query);
             write!(&mut req.stdout(), "Content-Type: text/plain\n\n{}", &hash).unwrap();
