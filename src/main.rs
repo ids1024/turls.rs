@@ -72,7 +72,6 @@ impl UrlMap {
 
     fn add_url(&mut self, url: &str) -> &str {
         if !self.urls.contains_second_key(url) {
-            loop {
             let mut hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
             while self.urls.contains_second_key(url) {
                 // Handle randomly occuring duplicate
