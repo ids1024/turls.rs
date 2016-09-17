@@ -27,43 +27,58 @@ fn from_base58(string: &str) -> u32 {
     })
 }
 
-fn load_urls() -> BidirMap<String, String> {
-    // Format "hash: url"
-    let urlsfile = File::open("urls.json").unwrap();
-    let json = serde_json::from_reader(urlsfile).unwrap();
-    if let Value::Object(urls) = json {
-        BidirMap::from_iter(urls.iter().map(|(k, v)| {
-            if let &Value::String(ref s) = v {
-                (k.clone(), s.clone())
-            } else {
-                panic!()
-            }
-        }))
-    } else {
-        panic!()
-    }
+struct UrlMap {
+    path: String,
+    urls: BidirMap<String, String>,
 }
 
-fn save_urls(urls: BidirMap<String, String>) {
-    let json = Value::Object(Map::from_iter(urls.iter().map(|&(ref k, ref v)| (k.clone(), Value::String(v.clone())))));
-    let mut urlsfile = File::create("urls.json").unwrap();
-    serde_json::to_writer(&mut urlsfile, &json).unwrap();
-}
-
-fn add_url(urls: BidirMap<String, String>, url: &str) -> String {
-    if let Some(hash) = urls.get_by_second(url) {
-    	return hash.to_owned();
+impl UrlMap {
+    fn new(path: &str) -> UrlMap {
+        let mut urlmap = UrlMap{path: path.to_owned(), urls: BidirMap::new()};
+        urlmap.load_urls();
+        urlmap
     }
-    let mut hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
-    while urls.contains_second_key(url) {
-        // Handle randomly occuring duplicate
-	hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
-    }
-    hash
-}
 
-fn get_url(urls: BidirMap<String, String>, hash: &str) -> Option<String> {
-    urls.get_by_first(hash).map(|x| x.to_owned())
+    fn load_urls(&mut self) {
+        // Format "hash: url"
+        let urlsfile = File::open(&self.path).unwrap();
+        let json = serde_json::from_reader(urlsfile).unwrap();
+        if let Value::Object(urls) = json {
+            self.urls = BidirMap::from_iter(urls.iter().map(|(k, v)| {
+                if let &Value::String(ref s) = v {
+                    (k.clone(), s.clone())
+                } else {
+                    panic!()
+                }
+            }))
+        } else {
+            panic!()
+        }
+    }
+
+    fn save_urls(&self) {
+        let json = Value::Object(Map::from_iter(self.urls.iter().map(|&(ref k, ref v)| (k.clone(), Value::String(v.clone())))));
+        let mut urlsfile = File::create(&self.path).unwrap();
+        serde_json::to_writer(&mut urlsfile, &json).unwrap();
+    }
+
+    fn add_url(&mut self, url: &str) -> String {
+        if let Some(hash) = self.urls.get_by_second(url) {
+            return hash.to_owned();
+        }
+        let mut hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
+        while self.urls.contains_second_key(url) {
+            // Handle randomly occuring duplicate
+            hash = to_base58(rand::thread_rng().gen_range::<u32>(3364, 113164));
+        }
+        self.urls.insert(hash.clone(), url.to_owned());
+        self.save_urls();
+        hash
+    }
+
+    fn get_url(&self, hash: &str) -> Option<String> {
+        self.urls.get_by_first(hash).map(|x| x.to_owned())
+    }
 }
 
 fn main() {
@@ -74,7 +89,7 @@ fn main() {
     // println!("{}", string)
     // println!("{}", from_base58(&input))
 
-    let urls = load_urls();
+    let mut urlmap = UrlMap::new("urls.json");
 
     
     //println!("{} : {}", number, to_base58(number))
