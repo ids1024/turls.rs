@@ -1,4 +1,5 @@
 extern crate fastcgi;
+extern crate serde;
 extern crate serde_json;
 extern crate rand;
 extern crate bidir_map;
@@ -11,7 +12,8 @@ use std::fs::File;
 use rand::Rng;
 
 use bidir_map::BidirMap;
-use serde_json::{Value, Map};
+use serde::ser::Serializer;
+use serde_json::Value;
 
 const B58_ALPHABET: &'static str = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
@@ -63,11 +65,14 @@ impl UrlMap {
     }
 
     fn save_urls(&self) {
-        let json = Value::Object(Map::from_iter(self.urls
-            .iter()
-            .map(|&(ref k, ref v)| (k.clone(), Value::String(v.clone())))));
         let mut urlsfile = File::create(&self.path).unwrap();
-        serde_json::to_writer(&mut urlsfile, &json).unwrap();
+        let mut ser = serde_json::Serializer::new(&mut urlsfile);
+        let mut state = ser.serialize_map(Some(self.urls.len())).unwrap();
+        for &(ref k, ref v) in self.urls.iter() {
+            ser.serialize_map_key(&mut state, k).unwrap();
+            ser.serialize_map_value(&mut state, v).unwrap();
+        }
+        ser.serialize_map_end(state).unwrap();
     }
 
     fn add_url(&mut self, url: &str) -> &str {
