@@ -105,10 +105,10 @@ fn main() {
     let mut toml = String::new();
     configfile.read_to_string(&mut toml).unwrap();
     let config = toml::Parser::new(&toml).parse().unwrap();
-    let address: String = config.get("address").unwrap().as_str().unwrap().to_owned();
-    let baseurl: String = config.get("baseurl").unwrap().as_str().unwrap().to_owned();
+    let address = config.get("address").unwrap().as_str().unwrap();
+    let baseurl = config.get("baseurl").unwrap().as_str().unwrap();
 
-    let listener = TcpListener::bind(&address as &str).unwrap();
+    let listener = TcpListener::bind(address as &str).unwrap();
 
     fastcgi::run_tcp(|mut req| {
         let query = req.param("QUERY_STRING").unwrap();
@@ -117,7 +117,7 @@ fn main() {
             let hash = urlmap.add_url(&query);
             write!(&mut req.stdout(),
                    "Content-Type: text/plain\n\n{}{}",
-                   &baseurl,
+                   baseurl,
                    hash)
                 .unwrap();
         } else {
